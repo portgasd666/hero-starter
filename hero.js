@@ -67,7 +67,46 @@ var moves = {
 
   // Balanced
   balanced: function(gameData, helpers){
-    //FIXME : fix;
+    // OWN Strategy
+    var myHero = gameData.activeHero;
+    var board = gameData.board;
+
+    var healthWellStats = helpers.findNearestObjectDirectionAndDistance(board, myHero, function(tile) {
+    	return tile.type === 'HealthWell';
+    });
+
+    var enemyWeakerTileStats = helpers.findNearestObjectDirectionAndDistance(board, myHero, function(enemyTile) {
+    	return enemyTile.type === 'Hero' && enemyTile.team !== myHero.team && enemyTile.health < myHero.health;
+  	});
+
+  	var enemyTileStats = helpers.findNearestObjectDirectionAndDistance(board, myHero, function(enemyTile) {
+    	return enemyTile.type === 'Hero' && enemyTile.team !== myHero.team;
+  	});
+
+  	var allyTileStats = helpers.findNearestObjectDirectionAndDistance(board, myHero, function(heroTile) {
+    	return heroTile.type === 'Hero' && heroTile.team === myHero.team && heroTile.health < 60;
+  	});
+
+    // If my health is less than 60 heal myself
+    if (myHero.health <= 60) {
+    	return healthWellStats.direction;
+    } else if (allyTileStats && allyTileStats.distance <= 1) {
+    	return allyTileStats.direction;
+    } else if (enemyWeakerTileStats && enemyWeakerTileStats.distance <= 2) {
+    	return enemyTileStats.direction;
+    } else if (enemyTileStats && enemyTileStats.distance == 1) {
+    	return enemyTileStats.direction;
+    } else if(helpers.findNearestNonTeamDiamondMine(gameData)){
+    	return helpers.findNearestNonTeamDiamondMine(gameData);
+    } else {
+    	return enemyTileStats.direction;
+    }
+
+    // If there is an ally with health less than 60 and distance less than equal to 2 heal him
+
+    // If there is an enemy nearby with a health lower than mine with distance equal to 1 attack him
+
+    // Otherwise capture the closest diamond mine not owned by my team
     return null;
   },
 
@@ -76,6 +115,15 @@ var moves = {
   northener : function(gameData, helpers) {
     var myHero = gameData.activeHero;
     return 'North';
+  },
+
+  tempCustom : function(gameData, helpers) {
+	   var myHero = gameData.activeHero;
+    if (myHero.health < 60) {
+      return helpers.findNearestHealthWell(gameData);
+    } else {
+      return helpers.findNearestTeamMember(gameData);
+    }
   },
 
   // The "Blind Man"
@@ -122,6 +170,7 @@ var moves = {
   // The "Safe Diamond Miner"
   // This hero will attempt to capture enemy diamond mines.
   safeDiamondMiner : function(gameData, helpers) {
+  	console.log(gameData);
     var myHero = gameData.activeHero;
 
     //Get stats on the nearest health well
@@ -180,7 +229,7 @@ var moves = {
  };
 
 //  Set our heros strategy
-var  move =  moves.aggressor;
+var  move =  moves.balanced;
 
 // Export the move function here
 module.exports = move;
